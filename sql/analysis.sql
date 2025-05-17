@@ -15,3 +15,24 @@ select r.user_id, count(distinct r.business_id) from yelp_reviews_table r inner 
 group by 1 
 order by 2 desc 
 limit 10 -- From all reviews for restaurants
+
+-- 3. Most popular (most reviewed) business categories - based on # of reviews
+with businesses as 
+(
+    select business_id, trim(A.value) as category from yelp_businesses_table,
+    lateral split_to_table(categories, ',') A
+) select category, count(*) as review_count from businesses
+inner join yelp_reviews_table r on businesses.business_id = r.business_id
+group by 1 -- group by category
+order by 2 desc -- order by count (descending)
+
+-- 4. 3 most recently reviews for each business
+with businesses as (
+select r.*, b.name, row_number() 
+over(
+    partition by r.business_id order by review_date desc
+)
+as review_num
+from yelp_reviews_table r 
+inner join yelp_businesses_table b on r.business_id=b.business_id
+) select * from businesses where review_num <= 4 and review_num > 1
