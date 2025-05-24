@@ -36,3 +36,22 @@ as review_num
 from yelp_reviews_table r 
 inner join yelp_businesses_table b on r.business_id=b.business_id
 ) select * from businesses where review_num <= 4 and review_num > 1
+
+-- 5. Month with the highest number of reviews: July
+select month(review_date) as review_month, count(*) as review_count from yelp_reviews_table
+group by 1
+order by 2 desc
+
+-- 6. Percentage of 5-star reviews for all businesses
+select b.business_id, b.name, count(*) as reviews, sum(case when r.review_stars=5 then 1 else 0 end) as star_5_reviews, (star_5_reviews * 100)/reviews as star_5_percent 
+from yelp_reviews_table r
+inner join yelp_businesses_table b on r.business_id=b.business_id group by 1, 2
+
+-- 7. 5 most reviewed businesses in each city
+with cte as (
+select b.city, b.business_id, b.name, count(*) as total_reviews from yelp_reviews_table r
+inner join yelp_businesses_table b on r.business_id=b.business_id group by 1, 2, 3
+)
+
+select * from cte 
+qualify row_number() over (partition by city order by total_reviews desc) <= 5
