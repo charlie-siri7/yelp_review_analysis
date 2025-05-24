@@ -55,3 +55,29 @@ inner join yelp_businesses_table b on r.business_id=b.business_id group by 1, 2,
 
 select * from cte 
 qualify row_number() over (partition by city order by total_reviews desc) <= 5
+
+-- 8. Avg. rating of businesses with 100+ reviews
+select b.business_id, b.name, count(*) as reviews, avg(review_stars) as avg_rating
+from yelp_reviews_table r
+inner join yelp_businesses_table b on r.business_id=b.business_id group by 1, 2 having count(*) >= 100
+
+-- 9. 10 users (id) who have made the most reviews and the businesses they reviewed
+with users as (
+select r.user_id, count(*) as reviews
+from yelp_reviews_table r
+inner join yelp_businesses_table b on r.business_id=b.business_id where r.user_id is not null
+group by 1
+order by 2 desc
+limit 10
+)
+select user_id, business_id from yelp_reviews_table where user_id in (select user_id from users) 
+group by 1,2 -- to get distinct values
+order by user_id
+
+-- 10. Top 10 businesses with the most positive sentiment reviews
+select r.business_id, b.name, count(*) as positive_reviews from yelp_reviews_table r
+inner join yelp_businesses_table b on r.business_id=b.business_id
+where sentiments = 'Positive'
+group by 1, 2
+order by 3 desc
+limit 10
